@@ -1,0 +1,37 @@
+{
+    "root": "./",
+    "title": "Ansible-OMC",
+    "author": "qiaowenwei",
+    "head_title": "Ansible-OMC帮助文档",
+    "head_description": "Ansible-OMC帮助文档",
+    "head_keywords": "Ansible,OMC,帮助",
+    "logo": "./images/logo.png",
+
+    "gitbook": ">= 3.0.0",
+
+    "language": "zh-hans",
+
+    "fontState": {
+       "size": "2",
+       "family": "sans",
+       "theme": "sepia"
+    },
+
+    "plugins": [
+        "-sharing",
+        "search-pro",
+        "sitemap-general",
+	"splitter",
+	"expandable-chapters"
+    ],
+
+    "pluginsConfig": {
+        "sitemap-general": {
+            "prefix": "http://zitiao.org/simple/"
+        },
+        "simple-page-toc": {
+            "maxDepth": 3,
+            "skipFirstH1": true
+        }	
+    }
+}

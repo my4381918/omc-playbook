@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN"
+    "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/">
+  
+  <head>
+    
+    
+      
+        <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+      
+      
+      <title>
+        
+        背景介绍
+      </title>
+      
+      
+        <!-- YUI CSS reset, fonts, base -->
+        <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?3.0.0/build/cssreset/reset-min.css&amp;3.0.0/build/cssfonts/fonts-min.css&amp;3.0.0/build/cssbase/base-min.css" media="screen, projection" />
+        
+        <link rel="stylesheet" type="text/css" href="media/css/style.css" media="screen, projection" />
+        <link rel="stylesheet" type="text/css" href="media/css/pygments.css" media="screen, projection" />
+      
+      
+      
+      
+      
+        
+      
+    
+  </head>
+  
+  <body >
+    
+      
+      
+        
+          
+  
+    <ol id="breadcrumbs">
+      
+        <li class="crumb-0 not-last">
+          
+            <a href="./">index</a>
+          
+        </li>
+      
+        <li class="crumb-1 last">
+          
+            Nagios
+          
+        </li>
+      
+    </ol> <!-- ol#breadcrumbs -->
+  
+
+        
+      
+      
+      <div id="content">
+        
+        
+        
+        <h1>背景介绍</h1>
+<p>Nagios作为网管系统，对服务器进行监控一般用两种方式，一种是自带的插件即NRPE，另一种是SNMP协议（简单网络管理协议），这两种方式各有优缺点。下面对两种方式做简单的对比：</p>
+<h2>NRPE</h2>
+<p>总共由两部分组成：</p>
+<p>check_nrpe 插件，位于监控主机上</p>
+<p>NRPE daemon，运行在远程的Linux主机上(通常就是被监控机)
+按照上图，整个的监控过程如下：</p>
+<p>当Nagios 需要监控某个远程Linux 主机的服务或者资源情况时：
+<code>Nagios 会运行check_nrpe 这个插件，告诉它要检查什么；
+check_nrpe 插件会连接到远程的NRPE daemon，所用的方式是SSL；
+NRPE daemon 会运行相应的Nagios 插件来执行检查；
+NRPE daemon 将检查的结果返回给check_nrpe 插件，插件将其递交给nagios做处理.
+注意：NRPE daemon 需要Nagios插件安装在远程的Linux主机上，否则，daemon不能做任何的监控</code>
+所以NRPE需要在被监控主机上进行agent的安装和配置，如果主机过多，则部署和配置需要较大的工作量，优点是监控脚本覆盖较全，官网上有大量的监控插件，基本对系统涉及的所有服务都有涵盖，所以如果需要监控一些定制化的服务，开发成本很低任何可执行的脚本均可以用来监控。</p>
+<h2>SNMP</h2>
+<p>简单网络管理协议（SNMP），由一组网络管理的标准组成，包含一个应用层协议（application layer protocol）、数据库模型（database schema）和一组资源对象。SNMP是基于TCP/IP协议族的网络管理标准，是一种在IP网络中管理网络节点（如服务器、工作站、路由器、交换机等）的标准协议。工作原理是：NMS(网络管理系统)通过运行在服务器、交换机等等设备本地的SNMP服务代理，得到本地设备的相关信息转换格式后</p>
+<p>显然SNMP的功能更为强大，而且只需要在被监控机上开启SNMP服务做简单的配置即可，但目前支持的语言主要是C和perl，通过网络上目前已有资源安装后可以监控磁盘、内存、cpu、负载、虚拟ip等等基本的服务，但一些特殊的服务比如tomcat的监控可能就需要基于SNMP再做开发了。</p>
+<p>当然Nagios理论上支持同时用两种方式，具体使用哪种方式还是结合使用需要考虑实际情况，比如服务器规划，监控的类型等等。</p>
+<h1>一、配置使用NRPE监控服务器</h1>
+<p>首先，根据《Nagios系统安装指南》文档已经完成了监控机的部署安装。</p>
+<p>在被监控主机上上传软件包到/home/soft/目录，执行
+- useradd nagios #添加nagios用户
+- usermod -s /sbin/nologin nagios #让nagios无法登录</p>
+<p>确认服务器上有没有安装xinted，如果没有则安装
+- rpm -qa|grep xinted
+- rpm -ivh xinetd-2.3.14-34.el6.x86_64.rpm</p>
+<p>安装nagios-plugins
+- cd /home/soft
+- tar -zxvf nagios-plugins-2.0.3.tar.gz
+- cd nagios-plugins-2.0.3
+- ./configure --prefix=/usr/local/nagios --with-nagios-user=nagios --with-nagios-group=nagios #编译
+- make
+- make install</p>
+<p>安装nrpe插件
+- cd /home/soft
+- tar -zxvf nrpe-2.13.tar.gz
+- cd nrpe-2.13
+- ./configure
+- make all
+- make install-plugin
+- make install-daemon
+- make install-daemon-config
+- make install-xinetd</p>
+<p>在xinted服务下添加监控主机的ip（例中监控主机ip是192.168.105.94，根据实际情况修改），执行
+- sed -i 's/127.0.0.1/127.0.0.1 192.168.105.94/' /etc/xinetd.d/nrpe</p>
+<p>添加nrpe服务到service，然后重启xinted
+- echo "nrpe            5666/tcp                #nrpe" &gt;&gt; /etc/services
+- service xinetd restart</p>
+<p>然后执行
+- /usr/local/nagios/libexec/check_nrpe -H 127.0.0.1</p>
+<p>检查是否安装成功，如果输出“NRPE v2.13”则表示安装完成。</p>
+<p>如果需要新增监控项，比如数据库服务器上新增mysql连接数、主备状态等监控，首先把需要的插件check_mysql_processlist.sh、check_mysql_slavestatus.sh上传到/usr/local/nagios/libexec目录下，然后在etc/nrpe.cfg里添加command，例如操作：
+- vim /usr/local/nagios/etc/nrpe.cfg</p>
+<p>新增两行</p>
+<pre><code>command[check_mysql_connections]=/usr/local/nagios/libexec/check_mysql_connections -u test -p test -w 70 -c 90 
+command[check_mysql_slavestatus]=/usr/local/nagios/libexec/check_mysql_slavestatus.sh -H localhost -P 3306 -u test -p test -w 3 -c 10
+</code></pre>
+<p>然后重启xinted即完成被监控机的配置。</p>
+<p>监控主机上需配置command.cfg、service.cfg，添加以下部分：</p>
+<ul>
+<li>vim /usr/local/nagios/etc/objects/commands.cfg
+```</li>
+</ul>
+<h1>'check_nrpe' command definition</h1>
+<p>define command{
+        command_name    check_nrpe         ; 定义命令名称为check_nrpe,在services.cfg中要使用这个名称.
+        command_line    $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$       ;这是定义实际运行的插件程序.
+                        ; 这个命令行的书写要完全按照check_nrpe这个命令的用法,不知道用法的就用check_nrpe –h查看.
+        }
+<code>- vim /usr/local/nagios/etc/objects/services.cfg</code>
+;监控DB运行状态
+define service{
+        use                     local-service
+        host_name               LCDB1,LCDB2,LCDB3,JNDB1,JNDB2,JNDB3
+        service_description     check_mysql_connections
+        check_command           check_nrpe!check_mysql_connections
+        }
+define service{
+        use                     local-service
+        host_name               LCDB1,LCDB2,LCDB3,JNDB1,JNDB2,JNDB3
+        service_description     check_mysql_slavestatus
+        check_command           check_nrpe!check_mysql_slavestatus
+        }
+```
+然后重启监控主机上的nagios服务，
+- service nagios restart</p>
+<p>就可以在网页上查看这几台数据库服务器的连接数、主备状态被成功的监控了。</p>
+<h1>二、配置使用SNMP监控服务器</h1>
+<p>首先，根据《Nagios系统安装指南》文档已经完成了监控机的部署安装。</p>
+<p>安装所需软件:</p>
+<p>Nagios-snmp-plugins.1.1.1.tar.gz</p>
+<p>Crypt-DES-2.07.tar.gz</p>
+<p>Digest-HMAC-1.03.tar.gz</p>
+<p>Digest-MD5-2.53.tar.gz</p>
+<p>Digest-SHA1-2.13.tar.gz</p>
+<p>Net-SNMP-v6.0.1.tar.gz</p>
+<p>安装步骤：</p>
+<h2>1、安装net-snmp</h2>
+<p>一般来讲安装操作系统时如果选择的软件开发工作站模式，则已经安装了net-snmp的相关模块。</p>
+<p>执行rpm -qa|grep net-snmp
+<code>net-snmp-utils-5.5-57.el6.x86_64
+net-snmp-perl-5.5-57.el6.x86_64
+net-snmp-libs-5.5-57.el6.x86_64
+net-snmp-5.5-57.el6.x86_64
+net-snmp-python-5.5-57.el6.x86_64
+net-snmp-devel-5.5-57.el6.x86_64</code>
+如果没有安装，则执行yum install net-snmp -y安装即可。</p>
+<h2>2、启动snmp服务并验证</h2>
+<ul>
+<li>service snmpd start</li>
+</ul>
+<p>执行snmpwalk命令查看主机名。
+- snmpwalk -c public –v 2c  localhost sysName.0</p>
+<p>输出SNMPv2-MIB::sysName.0 = STRING: localhost.localdomain表示正常。</p>
+<h2>3、配置snmp</h2>
+<p>修改监控机器和被监控机器的etc/snmp/snmpd.conf文件。修改部分在行尾注释了。</p>
+<ul>
+<li>vim /etc/snmp/snmpd.conf
+```</li>
+<li>com2sec notConfigUser default   public//共同体名字可修改为自己需要的字符串</li>
+<li>
+<p>access notConfigGroup ""     any       noauth    exact mib2  none none//修改为mib2</p>
+</li>
+<li>
+<p>access notConfigGroup ""     any       noauth    exact all  none none//添加此行</p>
+</li>
+<li>view all   included  .1                               80//此行前面的#去掉</li>
+<li>
+<p>view mib2  included .iso.org.dod.internet.mgmt.mib-2 fc//此行前面的#去掉
+```
+保存修改，重启snmp服务</p>
+</li>
+<li>
+<p>service snmpd restart</p>
+</li>
+</ul>
+<h2>4、监控主机上安装Nagios-snmp-plugins</h2>
+<p>首先顺序安装Crypt-DES-2.07.tar.gz、Digest-HMAC-1.03.tar.gz、Digest-MD5-2.53.tar.gz、Digest-SHA1-2.13.tar.gz、Net-SNMP-v6.0.1.tar.gz 
+安装流程一样，
+<code>tar –zxvf xxx.tar.gz
+cd xxx
+perl Makefile.pl
+make test
+make instal</code>
+最后安装nagios-snmp-plugins.1.1.1.tgz
+解压后在目录下可以看到很多可用插件。可以执行install.sh进行安装，也可以直接拷贝snmp的插件到/usr/local/nagios/libexec目录下，赋予chown nagios:nagios ./check_snmp_*  权限即可。</p>
+<h3>5、nagios支持配置snmp</h3>
+<p>需要修改command.cfg、services.cfg，例子中配置了监控服务器的存储情况。
+- vim /usr/local/nagios/etc/objects/commands.cfg</p>
+<p>尾部追加下面的配置
+```</p>
+<h1>'check_snmp_storage'</h1>
+<p>define command{
+       command_name    check_snmp_storage
+       command_line    $USER1$/check_snmp_storage.pl -H $HOSTADDRESS$ -C $ARG1$ -m $ARG2$ -w $ARG3$ -c $ARG4$ -f
+}</p>
+<p><code>- vim /usr/local/nagios/etc/objects/services.cfg</code>
+define service{
+        use                     local-service,srv-pnp          ;引用local-service,srv-pnp服务的属性值，local-service,srv-pnp在templates.cfg文件中进行了定义。
+        hostgroup_name          sdserver               ;指定要监控哪个主机上的服务，“Nagios-Server”在hosts.cfg文件中进行了定义。
+        service_description     check-storage       ;对监控服务内容的描述，以供维护人员参考。
+        check_command           check_snmp_storage!public!/!80!90       ;指定检查的命令。
+        contact_groups          ops
+        process_perf_data       1
+        }
+```
+新增配置完成后，重启监控主机nagios。
+- service nagios restart</p>
+<p>然后在页面上即可看到被监控机的磁盘信息被成功监控了。</p>
+        
+        
+        
+        
+        <hr class="clear" />
+      </div> <!-- div#content -->
+      
+      
+      <div id="footer">
+        <p>
+          
+          Powered by <a href="http://markdoc.org/">Markdoc</a>.
+        </p>
+      </div>
+      
+    
+    
+    
+    <hr class="clear" />
+  </body>
+</html>
